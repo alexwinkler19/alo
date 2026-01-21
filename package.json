@@ -1,0 +1,27 @@
+{
+    "name": "alo-antigravity",
+    "private": true,
+    "scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "lint": "turbo run lint",
+        "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+        "figma:parse": "figma connect parse",
+        "figma:publish": "figma connect publish",
+        "figma:unpublish": "figma connect unpublish"
+    },
+    "devDependencies": {
+        "@figma/code-connect": "^1.3.12",
+        "prettier": "^3.4.2",
+        "turbo": "^2.3.3"
+    },
+    "packageManager": "pnpm@9.15.0",
+    "engines": {
+        "node": ">=18"
+    },
+    "dependencies": {
+        "expo-modules-core": "^3.0.28",
+        "react-dom": "^19.2.1",
+        "react-native-web": "^0.21.2"
+    }
+}

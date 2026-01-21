@@ -1,0 +1,26 @@
+{
+  "name": "@alo/theme",
+  "version": "0.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "sideEffects": false,
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "@tamagui/core": "*",
+    "react": "*"
+  },
+  "devDependencies": {
+    "@tamagui/core": "1.139.4",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@tamagui/config": "1.139.4",
+    "@tamagui/font-inter": "1.139.4",
+    "@tamagui/shorthands": "1.139.4",
+    "@tamagui/themes": "1.139.4"
+  }
+}
