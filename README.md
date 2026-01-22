@@ -1,7 +1,5 @@
-# Alo - Weekend Activity App
-
-A production-grade cross-platform mobile app for finding and joining weekend
-activities and trips.
+# alo - all life outdoor
+A cross-platform mobile app for finding and joining weekend activities and trips.
 
 ## Tech Stack
 
