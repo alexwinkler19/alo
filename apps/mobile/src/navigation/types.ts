@@ -15,9 +15,33 @@ export type AuthStackParamList = {
 };
 
 /**
- * App Stack - Authenticated users (placeholder)
+ * Search params passed between search screens
  */
-export type AppStackParamList = Record<string, undefined>;
+export interface SearchParams {
+  location?: string;
+  dateRange?: {
+    start: number | null;
+    end: number | null;
+    month: string; // e.g., "January 2026"
+  };
+  guests?: number;
+}
+
+/**
+ * App Stack - Authenticated users
+ */
+export type AppStackParamList = {
+  Explore: undefined;
+  Search: undefined;
+  SearchWhere: SearchParams | undefined;
+  SearchWhereResults: SearchParams | undefined;
+  SearchWhen: SearchParams | undefined;
+  SearchWhenFlexible: SearchParams | undefined;
+  SearchWho: SearchParams | undefined;
+  Wishlist: undefined;
+  Inbox: undefined;
+  Profile: undefined;
+};
 
 /**
  * Root navigation

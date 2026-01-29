@@ -12,13 +12,31 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TamaguiProvider } from './src/providers/TamaguiProvider';
 import { QueryProvider } from './src/providers/QueryProvider';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { ToastProvider } from './src/contexts/ToastContext';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuth } from './src/hooks/useAuth';
-import { SignUpScreen, LoginScreen } from './src/screens';
-import type { AuthStackParamList } from './src/navigation/types';
+import { 
+  SignUpScreen, 
+  LoginScreen, 
+  ProfileScreen, 
+  ExploreScreen, 
+  SearchScreen, 
+  SearchWhereScreen,
+  SearchWhereResultsScreen,
+  SearchWhenScreen,
+  SearchWhenFlexibleScreen,
+  SearchWhoScreen,
+  WishlistScreen, 
+  InboxScreen 
+} from './src/screens';
+import type { AuthStackParamList, AppStackParamList } from './src/navigation/types';
 
 // Auth stack for unauthenticated users
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+
+// App stack for authenticated users
+const AppStack = createNativeStackNavigator<AppStackParamList>();
 
 /**
  * Auth Navigator
@@ -37,6 +55,35 @@ function AuthNavigator() {
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="SignUp" component={SignUpScreen} />
     </AuthStack.Navigator>
+  );
+}
+
+/**
+ * App Navigator
+ *
+ * Stack navigator for authenticated users.
+ * Contains the main app screens.
+ */
+function AppNavigator() {
+  return (
+    <AppStack.Navigator
+      initialRouteName="Explore"
+      screenOptions={{
+        headerShown: false,
+        animation: 'none',
+      }}
+    >
+      <AppStack.Screen name="Explore" component={ExploreScreen} />
+      <AppStack.Screen name="Search" component={SearchScreen} />
+      <AppStack.Screen name="SearchWhere" component={SearchWhereScreen} />
+      <AppStack.Screen name="SearchWhereResults" component={SearchWhereResultsScreen} />
+      <AppStack.Screen name="SearchWhen" component={SearchWhenScreen} />
+      <AppStack.Screen name="SearchWhenFlexible" component={SearchWhenFlexibleScreen} />
+      <AppStack.Screen name="SearchWho" component={SearchWhoScreen} />
+      <AppStack.Screen name="Wishlist" component={WishlistScreen} />
+      <AppStack.Screen name="Inbox" component={InboxScreen} />
+      <AppStack.Screen name="Profile" component={ProfileScreen} />
+    </AppStack.Navigator>
   );
 }
 
@@ -67,12 +114,9 @@ function RootNavigator() {
     return <LoadingScreen />;
   }
 
-  // TODO: Add AppNavigator for authenticated users when main app screens are built
-  // For now, authenticated users also see the auth stack (they can sign out from there)
+  // Show app stack for authenticated users
   if (isAuthenticated) {
-    // Placeholder: In production, this would show the main app stack
-    // return <AppNavigator />;
-    return <AuthNavigator />;
+    return <AppNavigator />;
   }
 
   // Show auth stack for unauthenticated users
@@ -83,24 +127,30 @@ function RootNavigator() {
  * App Component
  *
  * Root component that sets up all required providers:
+ * - ErrorBoundary: Catches JavaScript errors
  * - SafeAreaProvider: Safe area insets for notches/home indicators
  * - QueryProvider: React Query for server state management
  * - AuthProvider: Authentication context with Supabase
  * - TamaguiProvider: UI theming and styled components
+ * - ToastProvider: Toast notification context
  * - NavigationContainer: React Navigation container
  */
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <QueryProvider>
-        <AuthProvider>
-          <TamaguiProvider>
-            <NavigationContainer>
-              <RootNavigator />
-            </NavigationContainer>
-          </TamaguiProvider>
-        </AuthProvider>
-      </QueryProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <TamaguiProvider>
+              <ToastProvider>
+                <NavigationContainer>
+                  <RootNavigator />
+                </NavigationContainer>
+              </ToastProvider>
+            </TamaguiProvider>
+          </AuthProvider>
+        </QueryProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

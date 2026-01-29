@@ -12,6 +12,7 @@ import {
   ImagePlaceholder
 } from '../assets/icons';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../contexts/ToastContext';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
 
@@ -184,6 +185,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { signIn } = useAuth();
+  const { showToast } = useToast();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -196,10 +198,30 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setIsSubmitting(false);
 
     if (error) {
-      Alert.alert('Login Failed', error.message);
+      // Check if user doesn't exist (Supabase returns "Invalid login credentials" for non-existent users)
+      const isUserNotFound =
+        error.message.toLowerCase().includes('invalid login credentials') ||
+        error.message.toLowerCase().includes('user not found') ||
+        error.code === 'invalid_credentials';
+
+      if (isUserNotFound) {
+        // Use Informative (neutral) style for non-existent account
+        showToast({
+          style: 'Informative',
+          title: 'Account not found',
+          description: 'There is no account linked to this email address. Please register.',
+        });
+      } else {
+        // Generic error toast for other errors (wrong password, etc.)
+        showToast({
+          style: 'Error',
+          title: 'Login failed',
+          description: error.message,
+        });
+      }
     }
     // On success, the AuthContext will update isAuthenticated
-    // and the navigator will handle showing the authenticated screens
+    // and the navigator will handle showing the ProfileScreen
   };
 
   const handleForgotPassword = () => {

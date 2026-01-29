@@ -5,6 +5,7 @@ import { semantic, typography } from '@alo/theme';
 import { StatusBar, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Svg, Path } from 'react-native-svg';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../contexts/ToastContext';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
 
@@ -149,6 +150,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { signUp } = useAuth();
+  const { showToast } = useToast();
 
   const handleSignUp = async () => {
     // Validation
@@ -172,10 +174,29 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
     setIsSubmitting(false);
 
     if (error) {
-      Alert.alert('Sign Up Failed', error.message);
+      // Check if email already exists (Supabase returns this error)
+      const isEmailExists =
+        error.message.toLowerCase().includes('already registered') ||
+        error.message.toLowerCase().includes('already exists') ||
+        error.code === 'user_already_exists';
+
+      if (isEmailExists) {
+        showToast({
+          style: 'Error',
+          title: 'Account exists',
+          description: 'An account with this email address already exists.',
+        });
+      } else {
+        // Generic error toast for other errors
+        showToast({
+          style: 'Error',
+          title: 'Sign up failed',
+          description: error.message,
+        });
+      }
     }
     // On success, the AuthContext will update isAuthenticated
-    // and the navigator will handle showing the authenticated screens
+    // and the navigator will handle showing the ProfileScreen
   };
 
   const handleLogin = () => {
