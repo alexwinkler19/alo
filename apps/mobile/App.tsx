@@ -13,22 +13,23 @@ import { TamaguiProvider } from './src/providers/TamaguiProvider';
 import { QueryProvider } from './src/providers/QueryProvider';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { ToastProvider } from './src/contexts/ToastContext';
+import { LikedPostsProvider } from './src/contexts/LikedPostsContext';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuth } from './src/hooks/useAuth';
-import { 
-  SignUpScreen, 
-  LoginScreen, 
-  ProfileScreen, 
-  ExploreScreen, 
-  SearchScreen, 
+import {
+  SignUpScreen,
+  LoginScreen,
+  ProfileScreen,
+  ExploreScreen,
+  SearchScreen,
   SearchWhereScreen,
   SearchWhereResultsScreen,
   SearchWhenScreen,
   SearchWhenFlexibleScreen,
   SearchWhoScreen,
-  WishlistScreen, 
-  InboxScreen 
+  LikedScreen,
+  InboxScreen
 } from './src/screens';
 import type { AuthStackParamList, AppStackParamList } from './src/navigation/types';
 
@@ -80,7 +81,7 @@ function AppNavigator() {
       <AppStack.Screen name="SearchWhen" component={SearchWhenScreen} />
       <AppStack.Screen name="SearchWhenFlexible" component={SearchWhenFlexibleScreen} />
       <AppStack.Screen name="SearchWho" component={SearchWhoScreen} />
-      <AppStack.Screen name="Wishlist" component={WishlistScreen} />
+      <AppStack.Screen name="Liked" component={LikedScreen} />
       <AppStack.Screen name="Inbox" component={InboxScreen} />
       <AppStack.Screen name="Profile" component={ProfileScreen} />
     </AppStack.Navigator>
@@ -142,11 +143,13 @@ export default function App() {
         <QueryProvider>
           <AuthProvider>
             <TamaguiProvider>
-              <ToastProvider>
-                <NavigationContainer>
-                  <RootNavigator />
-                </NavigationContainer>
-              </ToastProvider>
+              <LikedPostsProvider>
+                <ToastProvider>
+                  <NavigationContainer>
+                    <RootNavigator />
+                  </NavigationContainer>
+                </ToastProvider>
+              </LikedPostsProvider>
             </TamaguiProvider>
           </AuthProvider>
         </QueryProvider>

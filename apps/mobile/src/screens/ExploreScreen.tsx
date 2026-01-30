@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { StatusBar, FlatList } from 'react-native';
-import { YStack, XStack, ScrollView, Stack, styled } from 'tamagui';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StatusBar, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { YStack, XStack, ScrollView, Stack, styled, Spinner } from 'tamagui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   TopBar,
@@ -13,6 +13,8 @@ import {
 import { primitive } from '@alo/theme';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AppStackParamList } from '../navigation/types';
+import { fetchUsers, generateAvatarUrl, type UserProfile } from '../services/profiles';
+import { useLikedPosts, type LikedPost } from '../contexts/LikedPostsContext';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Explore'>;
 
@@ -46,117 +48,122 @@ const StoriesScroll = styled(ScrollView, {
   paddingHorizontal: 8,
 });
 
+const RefreshIndicatorContainer = styled(YStack, {
+  name: 'RefreshIndicatorContainer',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: 16,
+});
+
 /**
- * Sample Data
- *
- * In production, this would come from an API/service.
+ * Story type definition
  */
-const sampleStories = [
-  { id: '1', type: 'Mine' as const, userName: 'Your Story' },
-  { id: '2', type: 'Normal' as const, userName: 'Arthur' },
-  { id: '3', type: 'Normal' as const, userName: 'Sarah' },
-  { id: '4', type: 'Normal' as const, userName: 'Nicolas' },
-  { id: '5', type: 'Normal' as const, userName: 'Clarissa' },
-  { id: '6', type: 'Live' as const, userName: 'Vanessa' },
-  { id: '7', type: 'Normal' as const, userName: 'Alex' },
-  { id: '8', type: 'Normal' as const, userName: 'Emma' },
-  { id: '9', type: 'Normal' as const, userName: 'Lucas' },
-  { id: '10', type: 'Normal' as const, userName: 'Sophie' },
+interface StoryData {
+  id: string;
+  type: 'Normal' | 'Mine' | 'Live';
+  userName: string;
+  profileImage?: string;
+}
+
+/**
+ * Fallback stories when database is not available
+ * Uses DiceBear for memoji-style avatars
+ */
+const fallbackStories: StoryData[] = [
+  { id: '1', type: 'Mine', userName: 'Your Story' },
+  { id: '2', type: 'Normal', userName: 'Arthur', profileImage: generateAvatarUrl('Arthur') },
+  { id: '3', type: 'Normal', userName: 'Sarah', profileImage: generateAvatarUrl('Sarah') },
+  { id: '4', type: 'Normal', userName: 'Nicolas', profileImage: generateAvatarUrl('Nicolas') },
+  { id: '5', type: 'Normal', userName: 'Clarissa', profileImage: generateAvatarUrl('Clarissa') },
+  { id: '6', type: 'Live', userName: 'Vanessa', profileImage: generateAvatarUrl('Vanessa') },
+  { id: '7', type: 'Normal', userName: 'Alex', profileImage: generateAvatarUrl('Alex') },
+  { id: '8', type: 'Normal', userName: 'Emma', profileImage: generateAvatarUrl('Emma') },
+  { id: '9', type: 'Normal', userName: 'Lucas', profileImage: generateAvatarUrl('Lucas') },
+  { id: '10', type: 'Normal', userName: 'Sophie', profileImage: generateAvatarUrl('Sophie') },
 ];
+
+/**
+ * Convert UserProfile to StoryData
+ */
+const userToStory = (user: UserProfile, index: number): StoryData => ({
+  id: user.id,
+  type: index === 4 ? 'Live' : 'Normal', // Make one user "Live" for demo
+  userName: user.name,
+  profileImage: user.avatar_url || generateAvatarUrl(user.name),
+});
 
 const samplePosts = [
   {
     id: '1',
-    size: 'Landscape' as const,
-    user: { name: 'Vanessa', location: 'Annecy' },
-    images: ['https://picsum.photos/seed/ski1/800/600'],
-    likedBy: 'Sarah & 32 others',
+    user: { name: 'Vanessa', avatar: generateAvatarUrl('Vanessa') },
+    images: ['https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=600&fit=crop'],
+    likedBy: 'Sarah & 3 others',
     caption: {
       username: 'Vanessa',
-      text: 'Looking for 3 people to join me for a skitour - check the details in the app',
-      hashtags: ['#skiing'],
+      text: 'Looking for 1 more player for padel this Saturday morning - who\'s in?',
+      hashtags: ['#padel'],
     },
     commentCount: 12,
   },
   {
     id: '2',
-    size: 'Portrait' as const,
-    sponsored: true,
-    carousel: true,
-    user: { name: 'Mountain Resort', location: 'Alps' },
-    images: [
-      'https://picsum.photos/seed/resort1/800/1000',
-      'https://picsum.photos/seed/resort2/800/1000',
-      'https://picsum.photos/seed/resort3/800/1000',
-    ],
-    likedBy: 'John & 45 others',
-    caption: {
-      username: 'Mountain Resort',
-      text: 'Experience the best skiing this winter!',
-      hashtags: ['#ski', '#winter'],
-    },
-    commentCount: 23,
-    currentImageIndex: 1,
-  },
-  {
-    id: '3',
-    size: 'Square' as const,
-    user: { name: 'Alex', location: 'Chamonix' },
-    images: ['https://picsum.photos/seed/powder1/800/800'],
-    likedBy: 'Emma & 18 others',
+    user: { name: 'Alex', avatar: generateAvatarUrl('Alex') },
+    images: ['https://images.unsplash.com/photo-1551524559-8af4e6624178?w=800&h=600&fit=crop'],
+    likedBy: 'Emma & 2 others',
     caption: {
       username: 'Alex',
-      text: 'Perfect powder day!',
-      hashtags: ['#powder'],
+      text: 'Epic ski touring day in the backcountry! Need 2 more for next weekend',
+      hashtags: ['#skitouring'],
     },
     commentCount: 8,
   },
   {
-    id: '4',
-    size: 'Portrait' as const,
-    carousel: true,
-    user: { name: 'Sarah', location: "Val d'Isère" },
-    images: [
-      'https://picsum.photos/seed/summit1/800/1000',
-      'https://picsum.photos/seed/summit2/800/1000',
-      'https://picsum.photos/seed/summit3/800/1000',
-      'https://picsum.photos/seed/summit4/800/1000',
-    ],
-    likedBy: 'Nicolas & 56 others',
+    id: '3',
+    user: { name: 'Sarah', avatar: generateAvatarUrl('Sarah') },
+    images: ['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop'],
+    likedBy: 'Nicolas & 4 others',
     caption: {
       username: 'Sarah',
-      text: 'Amazing views from the summit',
-      hashtags: ['#summit', '#views'],
+      text: 'Sunrise hike tomorrow at 6am - looking for hiking buddies!',
+      hashtags: ['#hiking', '#mountains'],
     },
     commentCount: 34,
-    currentImageIndex: 2,
+  },
+  {
+    id: '4',
+    user: { name: 'Emma', avatar: generateAvatarUrl('Emma') },
+    images: ['https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=800&h=600&fit=crop'],
+    likedBy: 'Sophie & 1 other',
+    caption: {
+      username: 'Emma',
+      text: 'Coffee & coworking session this afternoon - come join!',
+      hashtags: ['#coffee', '#networking'],
+    },
+    commentCount: 15,
   },
   {
     id: '5',
-    size: 'Landscape' as const,
-    sponsored: true,
-    user: { name: 'Ski Academy', location: 'Megève' },
-    images: ['https://picsum.photos/seed/lessons1/800/600'],
-    likedBy: 'Lucas & 67 others',
+    user: { name: 'Lucas', avatar: generateAvatarUrl('Lucas') },
+    images: ['https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&h=600&fit=crop'],
+    likedBy: 'Arthur & 2 others',
     caption: {
-      username: 'Ski Academy',
-      text: 'Join our ski lessons this season',
-      hashtags: ['#lessons'],
+      username: 'Lucas',
+      text: 'Tennis doubles match on Sunday - need one more player!',
+      hashtags: ['#tennis'],
     },
-    commentCount: 19,
+    commentCount: 22,
   },
   {
     id: '6',
-    size: 'Square' as const,
-    user: { name: 'Emma', location: 'Courchevel' },
-    images: ['https://picsum.photos/seed/sunset1/800/800'],
-    likedBy: 'Sophie & 29 others',
+    user: { name: 'Nicolas', avatar: generateAvatarUrl('Nicolas') },
+    images: ['https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&h=600&fit=crop'],
+    likedBy: 'Vanessa & 5 others',
     caption: {
-      username: 'Emma',
-      text: 'Sunset skiing is the best',
-      hashtags: ['#sunset'],
+      username: 'Nicolas',
+      text: 'Planning a trail running session this weekend - anyone interested?',
+      hashtags: ['#trailrunning'],
     },
-    commentCount: 15,
+    commentCount: 19,
   },
 ];
 
@@ -171,11 +178,60 @@ const samplePosts = [
  */
 export default function ExploreScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { toggleLike, isLiked } = useLikedPosts();
   const [activeTab, setActiveTab] = useState<TopBarTab>('Stays');
   const [activeNavTab] = useState<NavigationBarState>('Explore');
+  const [stories, setStories] = useState<StoryData[]>(fallbackStories);
+  const [isLoadingStories, setIsLoadingStories] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [posts, setPosts] = useState(samplePosts);
+
+  // Load users helper function
+  const loadUsers = useCallback(async () => {
+    const { data: users, error } = await fetchUsers();
+
+    if (users && users.length > 0) {
+      const userStories: StoryData[] = [
+        { id: 'mine', type: 'Mine', userName: 'Your Story' },
+        ...users.map(userToStory),
+      ];
+      setStories(userStories);
+    } else {
+      if (error) {
+        console.log('Using fallback stories:', error.message);
+      }
+      setStories(fallbackStories);
+    }
+  }, []);
+
+  // Fetch users for stories on mount
+  useEffect(() => {
+    const initialLoad = async () => {
+      setIsLoadingStories(true);
+      await loadUsers();
+      setIsLoadingStories(false);
+    };
+
+    initialLoad();
+  }, [loadUsers]);
+
+  // Pull-to-refresh handler
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+
+    // Reload stories
+    await loadUsers();
+
+    // Simulate loading new posts (in real app, fetch from API)
+    // For now, shuffle the posts to simulate new content
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setPosts(prevPosts => [...prevPosts].sort(() => Math.random() - 0.5));
+
+    setIsRefreshing(false);
+  }, [loadUsers]);
 
   const handleNavChange = (tab: NavigationBarState) => {
-    if (tab === 'Wishlist') navigation.navigate('Wishlist');
+    if (tab === 'Liked') navigation.navigate('Liked');
     else if (tab === 'Inbox') navigation.navigate('Inbox');
     else if (tab === 'Profile') navigation.navigate('Profile');
   };
@@ -184,22 +240,33 @@ export default function ExploreScreen({ navigation }: Props) {
     console.log('Story pressed:', userName);
   };
 
+  const handleLikePost = useCallback((item: typeof samplePosts[0]) => {
+    const likedPost: LikedPost = {
+      id: item.id,
+      user: item.user,
+      images: item.images,
+      likedBy: item.likedBy,
+      caption: item.caption,
+      commentCount: item.commentCount,
+    };
+    toggleLike(likedPost);
+  }, [toggleLike]);
+
   const renderPost = ({ item }: { item: (typeof samplePosts)[0] }) => (
     <PhotoInsta
-      size={item.size}
-      sponsored={item.sponsored}
-      carousel={item.carousel}
+      size="Landscape"
       user={item.user}
       images={item.images}
       likedBy={item.likedBy}
       caption={item.caption}
       commentCount={item.commentCount}
-      currentImageIndex={item.currentImageIndex}
-      onLike={() => console.log('Like:', item.id)}
+      hideMenu
+      hideLocation
+      isLiked={isLiked(item.id)}
+      onLike={() => handleLikePost(item)}
       onComment={() => console.log('Comment:', item.id)}
       onShare={() => console.log('Share:', item.id)}
-      onBookmark={() => console.log('Bookmark:', item.id)}
-      onLearnMore={() => console.log('Learn more:', item.id)}
+      onBookmark={() => console.log('Ask to join:', item.id)}
     />
   );
 
@@ -224,11 +291,12 @@ export default function ExploreScreen({ navigation }: Props) {
         <StoriesSection>
           <StoriesScroll>
             <XStack gap={16}>
-              {sampleStories.map((story) => (
+              {stories.map((story) => (
                 <UserStory
                   key={story.id}
                   storyType={story.type}
                   userName={story.userName}
+                  profileImage={story.profileImage}
                   onPress={() => handleStoryPress(story.userName)}
                 />
               ))}
@@ -238,13 +306,32 @@ export default function ExploreScreen({ navigation }: Props) {
 
         {/* Photo Feed */}
         <FlatList
-          data={samplePosts}
+          data={posts}
           renderItem={renderPost}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             paddingBottom: insets.bottom + 100,
           }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor="transparent"
+              colors={['transparent']}
+              progressViewOffset={0}
+            />
+          }
+          ListHeaderComponent={
+            isRefreshing ? (
+              <RefreshIndicatorContainer>
+                <ActivityIndicator
+                  size="small"
+                  color={primitive.color.neutral.grey['400']}
+                />
+              </RefreshIndicatorContainer>
+            ) : null
+          }
         />
       </ContentContainer>
 

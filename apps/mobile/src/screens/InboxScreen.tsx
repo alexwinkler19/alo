@@ -211,7 +211,7 @@ export function InboxScreen({ navigation }: Props) {
 
   const handleNavChange = (tab: NavigationBarState) => {
     if (tab === 'Explore') navigation.navigate('Explore');
-    else if (tab === 'Wishlist') navigation.navigate('Wishlist');
+    else if (tab === 'Liked') navigation.navigate('Liked');
     else if (tab === 'Profile') navigation.navigate('Profile');
   };
 

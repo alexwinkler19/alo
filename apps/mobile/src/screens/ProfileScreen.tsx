@@ -71,7 +71,7 @@ export function ProfileScreen({ navigation }: Props) {
 
   const handleNavChange = (tab: NavigationBarState) => {
     if (tab === 'Explore') navigation.navigate('Explore');
-    else if (tab === 'Wishlist') navigation.navigate('Wishlist');
+    else if (tab === 'Liked') navigation.navigate('Liked');
     else if (tab === 'Inbox') navigation.navigate('Inbox');
   };
 

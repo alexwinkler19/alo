@@ -8,5 +8,5 @@ export { default as SearchWhereResultsScreen } from './SearchWhereResultsScreen'
 export { default as SearchWhenScreen } from './SearchWhenScreen';
 export { default as SearchWhenFlexibleScreen } from './SearchWhenFlexibleScreen';
 export { default as SearchWhoScreen } from './SearchWhoScreen';
-export { WishlistScreen } from './WishlistScreen';
+export { LikedScreen } from './LikedScreen';
 export { InboxScreen } from './InboxScreen';

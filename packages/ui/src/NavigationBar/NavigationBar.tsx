@@ -4,7 +4,7 @@ import { primitive } from '@alo/theme';
 import { Menu } from '../Menu';
 import Svg, { Path, Circle } from 'react-native-svg';
 
-export type NavigationBarState = 'Explore' | 'Wishlist' | 'Trips' | 'Inbox' | 'Profile';
+export type NavigationBarState = 'Explore' | 'Liked' | 'Trips' | 'Inbox' | 'Profile';
 
 export interface NavigationBarProps {
   /** Current active tab state */
@@ -45,10 +45,18 @@ const HeartIcon = ({ color }: { color: string }) => (
   </Svg>
 );
 
-const CarIcon = ({ color }: { color: string }) => (
+const GlobeIcon = ({ color }: { color: string }) => (
   <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
     <Path
-      d="M5 13L3 13C2.73478 13 2.48043 13.1054 2.29289 13.2929C2.10536 13.4804 2 13.7348 2 14L2 17C2 17.2652 2.10536 17.5196 2.29289 17.7071C2.48043 17.8946 2.73478 18 3 18L5 18M19 13L21 13C21.2652 13 21.5196 13.1054 21.7071 13.2929C21.8946 13.4804 22 13.7348 22 14L22 17C22 17.2652 21.8946 17.5196 21.7071 17.7071C21.5196 17.8946 21.2652 18 21 18L19 18M5 18C5 18.5304 5.21071 19.0391 5.58579 19.4142C5.96086 19.7893 6.46957 20 7 20C7.53043 20 8.03914 19.7893 8.41421 19.4142C8.78929 19.0391 9 18.5304 9 18M5 18C5 17.4696 5.21071 16.9609 5.58579 16.5858C5.96086 16.2107 6.46957 16 7 16C7.53043 16 8.03914 16.2107 8.41421 16.5858C8.78929 16.9609 9 17.4696 9 18M19 18C19 18.5304 18.7893 19.0391 18.4142 19.4142C18.0391 19.7893 17.5304 20 17 20C16.4696 20 15.9609 19.7893 15.5858 19.4142C15.2107 19.0391 15 18.5304 15 18M19 18C19 17.4696 18.7893 16.9609 18.4142 16.5858C18.0391 16.2107 17.5304 16 17 16C16.4696 16 15.9609 16.2107 15.5858 16.5858C15.2107 16.9609 15 17.4696 15 18M9 18L15 18M5 13L5 6C5 5.73478 5.10536 5.48043 5.29289 5.29289C5.48043 5.10536 5.73478 5 6 5L18 5C18.2652 5 18.5196 5.10536 18.7071 5.29289C18.8946 5.48043 19 5.73478 19 6L19 13M5 13L19 13"
+      d="M2 12H22"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 2C14.5013 4.73835 15.9228 8.29203 16 12C15.9228 15.708 14.5013 19.2616 12 22C9.49872 19.2616 8.07725 15.708 8 12C8.07725 8.29203 9.49872 4.73835 12 2Z"
       stroke={color}
       strokeWidth="2"
       strokeLinecap="round"
@@ -165,17 +173,17 @@ export const NavigationBar = React.forwardRef<any, NavigationBarProps>(
           />
 
           <Menu
-            active={state === 'Wishlist'}
-            text="Wishlist"
-            icon={<HeartIcon color={getIconColor('Wishlist')} />}
+            active={state === 'Liked'}
+            text="Liked"
+            icon={<HeartIcon color={getIconColor('Liked')} />}
             showIndicators
-            onPress={() => onStateChange?.('Wishlist')}
+            onPress={() => onStateChange?.('Liked')}
           />
 
           <Menu
             active={state === 'Trips'}
             text="Trips"
-            icon={<CarIcon color={getIconColor('Trips')} />}
+            icon={<GlobeIcon color={getIconColor('Trips')} />}
             showIndicators
             onPress={() => onStateChange?.('Trips')}
           />

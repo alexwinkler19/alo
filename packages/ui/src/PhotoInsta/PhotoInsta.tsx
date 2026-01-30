@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Stack, XStack, YStack, Text, Image, styled } from 'tamagui';
 import { primitive, typography } from '@alo/theme';
-import { ImageSourcePropType } from 'react-native';
+import { ImageSourcePropType, Animated, Easing } from 'react-native';
 import Svg, { Path, Circle, Ellipse } from 'react-native-svg';
 
 export type PhotoInstaSize = 'Square' | 'Landscape' | 'Portrait';
@@ -33,6 +33,14 @@ export interface PhotoInstaProps {
   commentCount?: number;
   /** Current carousel index (for carousel posts) */
   currentImageIndex?: number;
+  /** Hide the 3-dot menu button */
+  hideMenu?: boolean;
+  /** Hide the location under the username */
+  hideLocation?: boolean;
+  /** Hide the bookmark icon */
+  hideBookmark?: boolean;
+  /** Whether this post is currently liked (controlled) */
+  isLiked?: boolean;
   /** Callbacks */
   onLike?: () => void;
   onComment?: () => void;
@@ -44,11 +52,12 @@ export interface PhotoInstaProps {
 }
 
 // Icon components
-const HeartIcon = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+const HEART_COLOR = '#ed2c23';
+const HeartIcon = ({ filled = false }: { filled?: boolean }) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? HEART_COLOR : 'none'}>
     <Path
       d="M20.84 4.61C20.3292 4.09944 19.7228 3.69789 19.0554 3.42823C18.3879 3.15858 17.6725 3.02563 16.95 3.02563C16.2275 3.02563 15.5121 3.15858 14.8446 3.42823C14.1772 3.69789 13.5708 4.09944 13.06 4.61L12 5.67L10.94 4.61C9.9083 3.57831 8.50903 2.99871 7.05 2.99871C5.59096 2.99871 4.19169 3.57831 3.16 4.61C2.1283 5.64169 1.54871 7.04097 1.54871 8.5C1.54871 9.95903 2.1283 11.3583 3.16 12.39L4.22 13.45L12 21.23L19.78 13.45L20.84 12.39C21.3506 11.8792 21.7521 11.2728 22.0218 10.6054C22.2914 9.93789 22.4244 9.22249 22.4244 8.5C22.4244 7.77751 22.2914 7.0621 22.0218 6.39464C21.7521 5.72718 21.3506 5.12075 20.84 4.61Z"
-      stroke="black"
+      stroke={filled ? HEART_COLOR : 'black'}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -130,6 +139,7 @@ const PostContainer = styled(YStack, {
   name: 'PhotoInsta',
   width: '100%',
   backgroundColor: primitive.color.white,
+  marginBottom: 16,
 });
 
 const TopProfile = styled(XStack, {
@@ -176,8 +186,8 @@ const UserName = styled(Text, {
   name: 'UserName',
   ...typography.bodyS,
   fontWeight: '500',
-  fontSize: 12,
-  lineHeight: 12,
+  fontSize: 13,
+  lineHeight: 13,
   color: primitive.color.black,
   letterSpacing: -0.165,
 });
@@ -185,8 +195,8 @@ const UserName = styled(Text, {
 const UserLocation = styled(Text, {
   name: 'UserLocation',
   ...typography.bodyXS,
-  fontSize: 10,
-  lineHeight: 11,
+  fontSize: 11,
+  lineHeight: 12,
   color: primitive.color.black,
   letterSpacing: -0.165,
 });
@@ -253,7 +263,7 @@ const CarouselIndicators = styled(XStack, {
 const LikeText = styled(Text, {
   name: 'LikeText',
   fontFamily: 'Inter',
-  fontSize: 12,
+  fontSize: 13,
   color: primitive.color.black,
   letterSpacing: -0.165,
 });
@@ -261,7 +271,7 @@ const LikeText = styled(Text, {
 const CaptionText = styled(Text, {
   name: 'CaptionText',
   fontFamily: 'Inter',
-  fontSize: 12,
+  fontSize: 13,
   color: primitive.color.black,
   letterSpacing: -0.165,
 });
@@ -269,11 +279,48 @@ const CaptionText = styled(Text, {
 const ViewCommentsText = styled(Text, {
   name: 'ViewCommentsText',
   fontFamily: 'Inter',
-  fontSize: 11,
-  lineHeight: 14,
+  fontSize: 12,
+  lineHeight: 15,
   color: 'rgba(0,0,0,0.4)',
   letterSpacing: -0.165,
 });
+
+const AskToJoinButton = styled(XStack, {
+  name: 'AskToJoinButton',
+  alignItems: 'center',
+  gap: 4,
+  paddingVertical: 6,
+  paddingHorizontal: 10,
+  backgroundColor: primitive.color.black,
+  borderRadius: 16,
+});
+
+const AskToJoinText = styled(Text, {
+  name: 'AskToJoinText',
+  fontFamily: 'Inter',
+  fontSize: 12,
+  fontWeight: '500',
+  color: primitive.color.white,
+});
+
+const SmallShareIcon = () => (
+  <Svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M22 2L11 13"
+      stroke="white"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M22 2L15 22L11 13L2 9L22 2Z"
+      stroke="white"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 /**
  * PhotoInsta Component
@@ -307,10 +354,14 @@ export const PhotoInsta = React.forwardRef<any, PhotoInstaProps>(
       carousel = false,
       user = { name: 'User Name', location: 'Location' },
       images = [],
-      likedBy = "Gabdu et d'autres personnes",
+      likedBy = "Sarah & others",
       caption,
       commentCount = 10,
       currentImageIndex = 0,
+      hideMenu = false,
+      hideLocation = false,
+      hideBookmark = false,
+      isLiked: isLikedProp,
       onLike,
       onComment,
       onShare,
@@ -321,6 +372,35 @@ export const PhotoInsta = React.forwardRef<any, PhotoInstaProps>(
     },
     ref
   ) => {
+    // Local state for like (toggles on each press)
+    const [localLiked, setLocalLiked] = useState(false);
+    const liked = isLikedProp !== undefined ? isLikedProp : localLiked;
+
+    // Animation for heart scale
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    const handleLikePress = () => {
+      // Toggle state and call callback FIRST so color changes immediately
+      if (isLikedProp === undefined) {
+        setLocalLiked(!localLiked);
+      }
+      onLike?.();
+
+      // Quick feedback animation (50ms total)
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.2,
+          duration: 25,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 25,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    };
+
     // Calculate aspect ratio based on size
     const getAspectRatio = () => {
       switch (size) {
@@ -352,12 +432,14 @@ export const PhotoInsta = React.forwardRef<any, PhotoInstaProps>(
             </Avatar>
             <UserText>
               <UserName>{user.name}</UserName>
-              {user.location && <UserLocation>{user.location}</UserLocation>}
+              {!hideLocation && user.location && <UserLocation>{user.location}</UserLocation>}
             </UserText>
           </UserInfo>
-          <Stack width={13} height={3} onPress={onMenuPress} cursor="pointer">
-            <ThreeDotsIcon />
-          </Stack>
+          {!hideMenu && (
+            <Stack width={13} height={3} onPress={onMenuPress} cursor="pointer">
+              <ThreeDotsIcon />
+            </Stack>
+          )}
         </TopProfile>
 
         {/* Image Section */}
@@ -373,7 +455,7 @@ export const PhotoInsta = React.forwardRef<any, PhotoInstaProps>(
         {/* Sponsored Learn More Banner */}
         {sponsored && (
           <SponsoredBanner onPress={onLearnMore} cursor="pointer">
-            <LearnMoreText>En savoir plus</LearnMoreText>
+            <LearnMoreText>Learn more</LearnMoreText>
             <Stack width={16} height={16}>
               <ChevronRightIcon />
             </Stack>
@@ -385,14 +467,13 @@ export const PhotoInsta = React.forwardRef<any, PhotoInstaProps>(
           {/* Action Icons */}
           <ActionsRow>
             <LeftActions>
-              <Stack width={24} height={24} onPress={onLike} cursor="pointer">
-                <HeartIcon />
-              </Stack>
+              <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                <Stack width={24} height={24} onPress={handleLikePress} cursor="pointer">
+                  <HeartIcon filled={liked} />
+                </Stack>
+              </Animated.View>
               <Stack width={24} height={24} onPress={onComment} cursor="pointer">
                 <CommentIcon />
-              </Stack>
-              <Stack width={24} height={24} onPress={onShare} cursor="pointer">
-                <ShareIcon />
               </Stack>
             </LeftActions>
 
@@ -405,30 +486,33 @@ export const PhotoInsta = React.forwardRef<any, PhotoInstaProps>(
               </CarouselIndicators>
             )}
 
-            <Stack width={24} height={24} onPress={onBookmark} cursor="pointer">
-              <BookmarkIcon />
-            </Stack>
+            {!hideBookmark && (
+              <AskToJoinButton onPress={onBookmark} cursor="pointer">
+                <AskToJoinText>Ask to join</AskToJoinText>
+                <SmallShareIcon />
+              </AskToJoinButton>
+            )}
           </ActionsRow>
 
-          {/* Likes */}
+          {/* Joined by */}
           <LikeText>
-            <Text fontFamily="Inter" fontSize={12} fontWeight="400">Aimé par </Text>
-            <Text fontFamily="Inter" fontSize={12} fontWeight="500">{likedBy}</Text>
+            <Text fontFamily="Inter" fontSize={13} fontWeight="400">Joined by </Text>
+            <Text fontFamily="Inter" fontSize={13} fontWeight="500">{likedBy}</Text>
           </LikeText>
 
           {/* Caption */}
           {caption && (
             <YStack gap={6}>
               <CaptionText>
-                <Text fontFamily="Inter" fontSize={12} fontWeight="500">{caption.username} </Text>
-                <Text fontFamily="Inter" fontSize={12} fontWeight="400">{caption.text} </Text>
+                <Text fontFamily="Inter" fontSize={13} fontWeight="500">{caption.username} </Text>
+                <Text fontFamily="Inter" fontSize={13} fontWeight="400">{caption.text} </Text>
                 {caption.hashtags?.map((tag, index) => (
-                  <Text key={index} fontFamily="Inter" fontSize={12} fontWeight="500" color="#3EA9E5">
+                  <Text key={index} fontFamily="Inter" fontSize={13} fontWeight="500" color="#3EA9E5">
                     {tag}
                   </Text>
                 ))}
               </CaptionText>
-              <ViewCommentsText>Voir les {commentCount} commentaires</ViewCommentsText>
+              <ViewCommentsText>View all {commentCount} comments</ViewCommentsText>
             </YStack>
           )}
         </BottomInfo>

@@ -38,7 +38,7 @@ export type AppStackParamList = {
   SearchWhen: SearchParams | undefined;
   SearchWhenFlexible: SearchParams | undefined;
   SearchWho: SearchParams | undefined;
-  Wishlist: undefined;
+  Liked: undefined;
   Inbox: undefined;
   Profile: undefined;
 };
